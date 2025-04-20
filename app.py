@@ -12,7 +12,6 @@ from sklearn.model_selection import cross_val_score
 
 client= OpenAI(api_key="")
 
-# 🔽 Binance API-dən məlumatları çək
 def fetch_binance_ohlc():
     url = "https://api.binance.com/api/v3/klines"
     params = {
@@ -40,12 +39,11 @@ def fetch_binance_ohlc():
 
 def cross_validate_model(model, X_scaled, y):
     scores = cross_val_score(model, X_scaled, y, cv=5, scoring='r2')
-    print("\n🧪 Cross-validation nəticələri (R²):", scores)
-    print(f"📊 Ortalama R²: {scores.mean():.4f}")
+    print("\n🧪 Cross-validation results (R²):", scores)
+    print(f"📊 Mean R²: {scores.mean():.4f}")
 
-# 🔽 Modeli öyrət və proqnoz üçün hazırla
 def train_neural_network():
-    print("📊 Binance-dən məlumat yüklənir...")
+    print("📊 Loading information from Binance...")
     df = fetch_binance_ohlc()
 
     # Feature və target ayır
@@ -65,7 +63,7 @@ def train_neural_network():
                          max_iter=10000,
                          random_state=42)
 
-    print("🚀 Model öyrədilir...")
+    print("🚀 Trainin the model...")
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
@@ -76,18 +74,17 @@ def train_neural_network():
 
     return model, scaler, df
 
-# 🔽 İstifadəçidən tarix al və qiyməti proqnozlaşdır
 def predict_price(model, scaler, df):
-    year = int(input("İli daxil et (məs: 2025): "))
-    month = int(input("Ayi daxil et (1-12): "))
-    day = int(input("Günü daxil et (1-31): "))
+    year = int(input("Input year (example: 2025): "))
+    month = int(input("Input month (1-12): "))
+    day = int(input("Input day (1-31): "))
 
     try:
         selected_date = datetime(year, month, day).date()
         row = df[df["Date"] == selected_date]
 
         if row.empty:
-            print("❌ Bu tarix üçün məlumat tapılmadı!")
+            print("❌ There is no information for this date")
             return
 
 
@@ -100,7 +97,7 @@ def predict_price(model, scaler, df):
         low_price = row["Low"].values[0]
         volume = row["Volume"].values[0]
 
-        print(f"\n📅 Tarix: {selected_date}")
+        print(f"\n📅 Date: {selected_date}")
         print(f"🤖 Predicted Price: ${predicted_price:.4f}")
         print(f"✅ Actual Price: ${row['Close'].values[0]:.4f}")
         print("\n🧠 ChatGPT Explanation:")
@@ -108,25 +105,24 @@ def predict_price(model, scaler, df):
 
 
     except Exception as e:
-        print(f"Xəta baş verdi: {e}")
+        print(f"Error: {e}")
 
 
 
 def explain_prediction(open_price, high_price, low_price, volume, predicted_price):
     prompt = (
-        f"Aşağıdakı verilmiş maliyyə dəyərlərinə əsasən Litecoin qiyməti təxmin edilib:\n"
         f"Open: ${open_price:.2f}\n"
         f"High: ${high_price:.2f}\n"
         f"Low: ${low_price:.2f}\n"
         f"Volume: {volume:.2f}\n"
-        f"Təxmin edilən qiymət: ${predicted_price:.2f}\n\n"
-        f"Zəhmət olmasa bu nəticəni insan üçün başa düşülən şəkildə qısa izah et."
+        f"Predicted Price: ${predicted_price:.2f}\n\n"
+        f"Please explain this result."
     )
 
     response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Sən maliyyə sahəsində ekspert AI köməkçisisən."},
+                {"role": "system", "content": "You are a financial expert."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7
@@ -136,8 +132,6 @@ def explain_prediction(open_price, high_price, low_price, volume, predicted_pric
     print(explanation)
 
 
-
-# 🔽 Başlat
 if __name__ == "__main__":
     model, scaler, df = train_neural_network()
     predict_price(model, scaler, df)
